@@ -1,0 +1,18 @@
+protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+		response.setContentType("text/html");
+		
+		PrintWriter out = response.getWriter();
+		out.println("<html>");
+		out.println("<head>");
+		out.println("<title>Greetings </title>");
+		out.println("</head>");
+		out.println("<body>");
+		
+		out.println("<p>Enter Email Id : </p>");
+			
+	
+		out.println("</body>");
+		out.println("</html>");
+		
+	}

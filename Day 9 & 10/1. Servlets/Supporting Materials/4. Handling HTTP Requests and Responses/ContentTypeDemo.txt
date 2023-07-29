@@ -1,0 +1,9 @@
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		
+		PrintWriter out = response.getWriter();
+		
+		out.println("Rno\tName\tMaths\tPhys\tComputer Sc\tTotal");
+		out.println("101\tJohn\t90\t90\t90\t=SUM(B2:D2)");
+		out.println("102\tDoe\t95\t95\t95\t=SUM(B2:D2)");
+		
+	}

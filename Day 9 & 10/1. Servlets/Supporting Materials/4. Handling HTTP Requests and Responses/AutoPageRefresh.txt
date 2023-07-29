@@ -1,0 +1,20 @@
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		
+		
+		PrintWriter out = response.getWriter();
+		
+		out.println("<!Doctype HTML>");
+		out.println("<html>");
+		out.println("<head>");
+		out.println("<title>Demo: AutoRefreshPage using Response Headers</title>");
+		out.println("</head>");
+		out.println("<body>");
+			
+		out.println("</body>");
+		out.println("</html>");
+		out.close();
+
+		
+		
+	}

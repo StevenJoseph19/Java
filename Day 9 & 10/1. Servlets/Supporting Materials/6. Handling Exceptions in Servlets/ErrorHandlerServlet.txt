@@ -1,0 +1,21 @@
+protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	
+		
+		
+		response.setContentType("text/html");
+		
+		PrintWriter out = response.getWriter();
+		out.println("<html>");
+		out.println("<head>");
+		out.println("<title>Error Handling </title>");
+		out.println("</head>");
+		out.println("<body>");
+		out.println( "<p>Status Code : " + + "</p>");
+		out.println( "<p>Error Message : " + + "</p>");
+		out.println( "<p>Request URI : " + + "</p>");
+		out.println( "<p>Servlet Name : " + + "</p>");
+		out.println("</body>");
+		out.println("</html>");
+		
+		
+	}
