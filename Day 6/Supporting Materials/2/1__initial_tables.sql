@@ -1,26 +1,32 @@
-DROP DATABASE IF EXISTS loboticket;
+DROP DATABASE IF EXISTS loboticket
+GO
 
-CREATE DATABASE loboticket;
+CREATE DATABASE loboticket
+GO
 
-USE loboticket;
+USE loboticket
+GO
 
-create table Venues
+create table dbo.Venues
 (
-    Id       Int PRIMARY KEY AUTO_INCREMENT,
-    Name     varchar(100)    not null,
-    Capacity Int             not null
-);
+    Id       int PRIMARY KEY IDENTITY NOT NULL,
+    Name     varchar(100) NOT NULL,
+    Capacity int           NOT NULL
+)
+GO
 
-create table Acts
+
+create table dbo.Acts
 (
-    Id          Int PRIMARY KEY AUTO_INCREMENT,
+    Id          int PRIMARY KEY IDENTITY NOT NULL,
     Name        TEXT            not null,
     RecordLabel TEXT            null
-);
+)
+GO
 
-create table Gigs
+create table dbo.Gigs
 (
-    Id          Int PRIMARY KEY AUTO_INCREMENT,
+    Id          int PRIMARY KEY IDENTITY NOT NULL,
     VenueId     Int           not null,
     ActId       Int           not null,
     TicketsSold Int           not null,
@@ -30,45 +36,52 @@ create table Gigs
     FOREIGN KEY (VenueId) REFERENCES Venues (Id),
     FOREIGN KEY (ActId) REFERENCES Acts (Id)
 );
+GO
 
-delimiter //
-DROP PROCEDURE IF EXISTS loboticket.GetActs //
+DROP PROCEDURE IF EXISTS loboticket.GetActs
+GO
 
-create procedure GetActs()
+create procedure GetActs
+AS
 BEGIN
     select acts.name, acts.recordlabel
     from acts
 	where acts.recordlabel IS NOT NULL
     order by acts.name;
     
-END //
-DELIMITER ;
+END 
+GO
 
-delimiter //
-DROP PROCEDURE IF EXISTS loboticket.GigReport //
-create procedure GigReport(IN startdate Date, IN enddate Date)
+DROP PROCEDURE IF EXISTS loboticket.GigReport 
+GO
+
+create procedure GigReport
+	@startdate Date,
+    @enddate Date
+AS
 begin
     select gigs.date, acts.name AS Act, acts.recordlabel, venues.name AS Venue, ticketssold, venues.capacity
     from gigs
              join acts on acts.id = gigs.actid
              join venues on venues.id = gigs.venueid
-    where date >= startdate
-      and date <= enddate
+    where date >= @startdate
+      and date <= @enddate
     order by gigs.date;
-end //
-DELIMITER ;
+end 
+GO
 
--- returns the total sales in the out parameter
-delimiter //
-DROP PROCEDURE IF EXISTS loboticket.GetTotalSales //
-create procedure GetTotalSales(OUT sales decimal(8, 2))
+DROP PROCEDURE IF EXISTS loboticket.GetTotalSales 
+GO
+
+create procedure GetTotalSales 
+		@sales decimal(8, 2) OUT
+AS
 begin
-    select sum(currentvalue) 'totalsales' from
+     SET @sales = (select sum(currentvalue) 'totalsales' from
         (select ticketssold, price, ticketssold*price 'currentvalue'
-         from gigs) salestable
-    into sales;
-end //
-DELIMITER ;
+         from gigs) salestable); 
+end 
+GO
 
 -- call like this:
 -- set @newprice = 11;
@@ -79,57 +92,70 @@ DELIMITER ;
 -- The idea is to see if we can set a new price, it takes the current price and applies a percentage rise
 -- if the new price is less than the maximum then it is set and returned in the inout parameter
 -- if the proposed new price is too large then the value is not changed and the current value is returned in the inout parameter
-delimiter //
-DROP PROCEDURE IF EXISTS loboticket.SetNewPrice //
-create procedure SetNewPrice(IN gigid int, IN percentage decimal(8,2), inout maxprice decimal(8,2))
-begin
-    declare gigprice decimal(8,2) default 0.0;
-    declare proposedprice decimal(8,2);
+DROP PROCEDURE IF EXISTS loboticket.SetNewPrice 
+GO
+
+create procedure SetNewPrice
+	@gigid int, 
+	@percentage decimal(8,2), 
+	@maxprice decimal(8,2) OUTPUT
+AS
+Begin
+    declare @gigprice decimal(8,2) ;
+    declare @proposedprice decimal(8,2);
+
+	Set @gigprice = 0.0
 
 
-    set gigprice = (select max(price) from gigs where id = gigid);
+    Set @gigprice = (select max(price) from gigs where id = @gigid);
 
-    set proposedprice = gigprice + (gigprice * percentage);
+    Set @proposedprice = @gigprice + (@gigprice * @percentage);
 
-    if (proposedprice < maxPrice)
-    then
-        set maxprice = proposedprice;
-        update gigs set price = proposedprice where id = gigid;
+    if (@proposedprice < @maxprice)
+	  Begin
+        set @maxprice = @proposedprice;
+        update gigs set price = @proposedprice where id = @gigid;
+	 End
     else
-        set maxprice = gigprice;
-    end if;
-end //
-DELIMITER ;
+	 Begin
+        set @maxprice = @gigprice;
+     End
+End
+GO
 
-delimiter //
-DROP PROCEDURE IF EXISTS InsertNewAct //
-CREATE PROCEDURE InsertNewAct(
-    IN inActId INT, 
-    IN inName TEXT,
-	IN inRecordLabel TEXT,
-	OUT message TEXT
-)
+DROP PROCEDURE IF EXISTS InsertNewAct
+GO
+
+CREATE PROCEDURE InsertNewAct
+    @inActId INT, 
+    @inName TEXT,
+	@inRecordLabel TEXT,
+	@message TEXT OUT
+
+AS
+
 BEGIN
-    -- exit if the duplicate key occurs
-	-- DECLARE EXIT HANDLER FOR 1062
-       DECLARE CONTINUE HANDLER FOR 1062
-    BEGIN
- 	SELECT CONCAT('Duplicate key (',inActId,',',inName,'',inRecordLabel,') occurred') AS message into message;
-    END;
-    
+  
+    BEGIN TRY
     -- insert a new row into the Acts table
     INSERT INTO acts(Id, Name,RecordLabel)
-    VALUES(inActId,inName,inRecordLabel);
+    VALUES(@inActId,@inName,@inRecordLabel);
     
     -- return the name of the Act
-    SELECT Name
-    FROM acts
-    WHERE Id = inActId 
-    INTO message;
-    
-END //
+    SET @message = (SELECT Name FROM acts WHERE Id = @inActId);
+	END TRY
+	-- exit if the duplicate key occurs
+	-- DECLARE EXIT HANDLER FOR 2627
+	BEGIN CATCH
+	IF (ERROR_NUMBER() = 2627)
+ 	 SET @message = (SELECT CONCAT('Duplicate key (',@inActId,',',@inName,'',@inRecordLabel,') occurred')) ;
+	 ELSE
+	 SELECT ERROR_MESSAGE() AS ErrorMessage;  
+    END CATCH
+END 
+GO
 
-DELIMITER ;
+SET IDENTITY_INSERT Venues ON
 
 INSERT INTO Venues (Id, Name, Capacity)
 Values (1, 'The Arena', 100);
@@ -139,6 +165,9 @@ INSERT INTO Venues (Id, Name, Capacity)
 Values (3, 'The Garage', 200);
 INSERT INTO Venues (Id, Name, Capacity)
 Values (4, 'The Yard', 20);
+SET IDENTITY_INSERT Venues OFF
+
+SET IDENTITY_INSERT Acts ON
 
 INSERT INTO Acts (Id, Name, RecordLabel)
 VALUES (1, 'Foo Feathers', 'Copitol');
@@ -155,7 +184,7 @@ VALUES (6, 'Led Balloon');
 INSERT INTO Acts (Id, Name)
 VALUES (7, 'Sheryl Rook');
 
-
+SET IDENTITY_INSERT Acts OFF
 
 INSERT INTO Gigs(VenueId, ActId, Price, TicketsSold, Date)
 VALUES (1, 1, 10.5, 90, '2022-11-04');
