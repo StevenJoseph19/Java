@@ -19,8 +19,8 @@ GO
 create table dbo.Acts
 (
     Id          int PRIMARY KEY IDENTITY NOT NULL,
-    Name        TEXT            not null,
-    RecordLabel TEXT            null
+    Name        VARCHAR(100)            not null,
+    RecordLabel VARCHAR(100)            null
 )
 GO
 
