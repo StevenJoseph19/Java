@@ -1,4 +1,4 @@
-package com.dxc.servlets;
+package com.godrej.demos;
 
 import java.io.IOException;
 import java.io.PrintWriter;
